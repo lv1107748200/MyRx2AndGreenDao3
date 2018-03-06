@@ -13,6 +13,15 @@ import com.hr.myrx2andgreendao3.entiy.User;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -48,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
                         for(int i=0; i<users.size();i++){
                             User user = users.get(i);
                             stringBuffer.append(user.getName()+"\n");
-
+                            user.refresh();
                             List<Dog> dogs = user.getDogs();
 
                             if(null != dogs){
@@ -68,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.insert:
 
                 set();
-
+                get();
                 break;
         }
     }
@@ -78,19 +87,19 @@ public class MainActivity extends AppCompatActivity {
     private void set(){
       final   long potion = getNumber();
 
-        List<Dog> dogs = new ArrayList<>();
+      final  List<Dog> dogss = new ArrayList<>();
 
         for(int i = 0 ; i<4; i++){
             Dog dog = new Dog();
             dog.setName("哈喇子"+potion);
             dog.setTagId(potion);
-            dogs.add(dog);
+            dogss.add(dog);
         }
 
 
 
 
-        UserDataManager.getInstance().insertOrReplaceInTx(dogs, new DBCallBack<List<Dog>>() {
+        UserDataManager.getInstance().insertOrReplaceInTx(dogss, new DBCallBack<List<Dog>>() {
             @Override
             public void onDBError(Throwable e) {
                 System.out.println("DB--->onDBError" + e.toString());
@@ -99,8 +108,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDBSuccess(List<Dog> dogs) {
                 User user = new User();
+                user.setId(potion);
                 user.setName(potion+"--->小明");
                 user.setDogs(dogs);
+
 
                 UserDataManager.getInstance().insertOrReplace(user, new DBCallBack<User>() {
                     @Override
@@ -122,6 +133,99 @@ public class MainActivity extends AppCompatActivity {
 
     private long  getNumber(){
         return (int) (Math.random()*10000);
+    }
+
+    private void get(){
+        Observable<String> cache =  Observable.create(new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(ObservableEmitter<String> e) throws Exception {
+
+                Thread.sleep(2000);
+                e.onNext("cache");//在操作符 concat 中，只有调用 onComplete 之后才会执行下一个 Observable
+
+              //  e.onComplete();
+
+            }
+        });
+
+
+        Observable<String> network =  Observable.create(new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(ObservableEmitter<String> e) throws Exception {
+
+                e.onNext("network");
+
+            }
+        });
+
+
+        cache.concatWith(network)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(String s) {
+                        System.out.println("--->"+s);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+    }
+
+    private void getflamp(){
+        Observable.create(new ObservableOnSubscribe<String>() {
+
+            @Override
+            public void subscribe(ObservableEmitter<String> e) throws Exception {
+
+            }
+        })      .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .flatMap(new Function<String, ObservableSource<String>>() {
+                    @Override
+                    public ObservableSource<String> apply(final String s) throws Exception {
+                        return Observable.create(new ObservableOnSubscribe<String>() {
+                            @Override
+                            public void subscribe(ObservableEmitter<String> e) throws Exception {
+                                e.onNext("呵呵");
+                            }
+                        });
+                    }
+                }).subscribe(new Observer<String>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(String s) {
+                System.out.println("--->"+s);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
     }
 
 }

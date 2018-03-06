@@ -117,6 +117,9 @@ public class UserDataManager {
                 .subscribe(s);
     }
 
+
+
+
     public void close(){
         DBManager.getInstance().uninit();
         DBManager.setInstance(null);
