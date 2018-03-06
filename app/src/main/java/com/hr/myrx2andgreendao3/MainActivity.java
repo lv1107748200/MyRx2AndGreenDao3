@@ -18,9 +18,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-
-
-
     }
 
     private static <T> Observable<T> get(final T entiy){
